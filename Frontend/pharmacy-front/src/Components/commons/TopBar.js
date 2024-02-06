@@ -44,7 +44,7 @@ function TopBar() {
       <div>
 
       {isLoggedIn && (
-              <button onClick={handleLogout}>Logout</button>
+              <button onClick={handleLogout} className=' py-2 px-3 print:hidden'>Logout</button>
             )}
       </div>
     {/* </div> */}

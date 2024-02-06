@@ -4,7 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 
-export default function Home() {
+  function Home() {
 
 
   return (
@@ -15,3 +15,5 @@ export default function Home() {
     </main>
   );
 }
+
+export default Home

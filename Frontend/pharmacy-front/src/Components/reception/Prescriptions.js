@@ -1,28 +1,31 @@
-
-import React, { useState } from 'react';
-
+'use client';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 const Prescriptions = () => {
+  const router = useRouter();
     const [prescriptions, setPrescriptions] = useState([
-      {
-        PID: 1,
-        patientName: 'John Doe',
-        doctorName: 'Dr. Smith',
-        age: 30,
-        pharmacy: 'ABC Pharmacy',
-        status: 'Pending',
-      },
-      {
-        PID: 2,
-        patientName: 'Jane Smith',
-        doctorName: 'Dr. Johnson',
-        age: 45,
-        pharmacy: 'XYZ Pharmacy',
-        status: 'Completed',
-      },
-      // Add more prescription objects here
+      
     ]);
 
     const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+      const fetchPatients = async () => {
+        try {
+          const response = await fetch('http://127.0.0.1:3000/reception/prescriptions');
+          const data = await response.json();
+         
+          console.log(data);
+          setPrescriptions(data)
+          // Log the fetched data
+        } catch (error) {
+          console.error('Error fetching patients:', error);
+        }
+      };
+  
+      fetchPatients();
+    }, []);
+  
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -34,13 +37,11 @@ const Prescriptions = () => {
       .includes(searchTerm.toLowerCase())
   );
   
-    const handlePrint = (prescription) => {
-      // Logic to print prescription
+    const manangeViewDetail = (prescriptionId) => {
+      router.push(`/reception/${prescriptionId}`);
     };
   
-    const handleOrder = (prescription) => {
-      // Logic to order prescription
-    };
+   
   
     return (<>
     <div className=' my-4 content-end flex justify-between' >
@@ -75,8 +76,8 @@ const Prescriptions = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredPrescriptions.map((prescription) => (
-            <tr key={prescription.PID}>
+          {filteredPrescriptions.map((prescription,index) => (
+            <tr key={index}>
               <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-500">
                 {prescription.PID}
               </td>
@@ -92,22 +93,19 @@ const Prescriptions = () => {
               <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-500">
                 {prescription.pharmacy}
               </td>
-              <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-500">
+              
+              <td className={`${prescription.status==='assigned' ? "text-blue-400":prescription.status==="waiting"?"text-gray-600":prescription.status==="completed"?"text-green-600":"text-black"}   px-6 py-4 whitespace-no-wrap border-b border-gray-500`}>
+                
                 {prescription.status}
               </td>
               <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-500">
                 <button
                   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2"
-                  onClick={() => handlePrint(prescription)}
+                  onClick={() => manangeViewDetail(prescription.prescriptionId)}
                 >
-                  Print
+                  View Detail
                 </button>
-                <button
-                  className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-                  onClick={() => handleOrder(prescription)}
-                >
-                  Order
-                </button>
+                
               </td>
             </tr>
           ))}

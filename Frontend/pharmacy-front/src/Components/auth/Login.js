@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation'
@@ -90,16 +89,7 @@ const handleSubmit = (event) => {
                 <button type='submit' className="bg-gray-700  text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600">Login</button>
             </div>
             </form>
-            {/* <div className="mt-4 flex items-center justify-between">
-                <span className="border-b w-1/5 md:w-1/4"></span>
-                <a href="#" className="text-xs text-gray-500 uppercase">Reception</a>
-                <span className="border-b w-1/5 md:w-1/4"></span>
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-            <span className="border-b w-1/5 md:w-1/4"></span>
-            <a href="#" className="text-xs text-gray-500 uppercase">Pharmacy</a>
-            <span className="border-b w-1/5 md:w-1/4"></span>
-        </div> */}
+            
         </div>
     </div>
     </div>

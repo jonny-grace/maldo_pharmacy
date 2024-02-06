@@ -29,9 +29,28 @@ const verifyToken = (req, res, next) => {
 
 
 // Get all assigned apointments
-router.get('/prescriptions',authenticatePharmacy, async (req, res) => {
+router.get('/prescriptions', async (req, res) => {
+  const token = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(token, secretKey);
+
+    // Check if the decoded email belongs to a user with the admin role
+    const username = decoded.username;
+    const currentUser= await userModel.findOne({username})
+    const userId=currentUser._id;
+    const pharmacy = await pharmacyModel.findOne({userId})
+    const pharmacyName= pharmacy.pharmacyName;
+
     try {
-      const prescriptions = await prescriptionModel.find({ status: { $in: ['waiting'] } });
+      const filter = {
+        $or: [
+          { status: 'waiting' },
+          { pharmacyName: pharmacyName, status: 'completed' }
+        ]
+      };
+      
+      const prescriptions = await prescriptionModel.find(filter);
+
+      // const prescriptions = await prescriptionModel.find({ status: { $in: ['waiting'] } });
   
       // Create an array to store the updated prescriptions with medicines
       const updatedPrescriptions = [];
@@ -58,12 +77,12 @@ router.get('/prescriptions',authenticatePharmacy, async (req, res) => {
         // Create a new object with the prescription data and the medicine details
         const updatedPrescription = {
         //   patientId: prescription.patientId,
-        //   prescriptionId:prescription._id,
+        prescriptionId:prescription._id,
           patientFullName: prescription.patientFullName,
           doctorFullName: prescription.doctorFullName,
-          age: prescription.age,
+          age: prescription.patientAge,
           medicines: medicineDetails,
-        //   status: prescription.status
+          status: prescription.status
         };
   
         // Push the updated prescription object to the array
@@ -106,12 +125,14 @@ router.get('/prescriptions',authenticatePharmacy, async (req, res) => {
        
       };
   res.json(updatedPrescription);
-  await apointmentModel.updateOne({ _id: prescription.apointmentId }, { apointment_active: false });
-  await prescriptionModel.updateOne({ _id: prescription._id }, { status: 'completed' });
+  // await apointmentModel.updateOne({ _id: prescription.apointmentId }, { apointment_active: false });
+  // await prescriptionModel.updateOne({ _id: prescription._id }, { status: 'completed' });
   } catch (err) {
   res.status(500).json({ message: err.message });
   }
   });
+
+
    
 //   router.post('/response/:Prid',async (req, res) => {
 //     const prescriptionId=req.params.Prid;
@@ -139,26 +160,28 @@ router.get('/prescriptions',authenticatePharmacy, async (req, res) => {
 //   }
 //   });
    
-router.post('/response/:Prid',authenticatePharmacy, async (req, res) => {
+router.post('/response/:Prid', async (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(token, secretKey);
 
     // Check if the decoded email belongs to a user with the admin role
     const username = decoded.username;
     const user = await userModel.findOne({ username });
+    console.log('user',user)
 const userId=user._id;
 const pharmacy = await pharmacyModel.findOne({ userId });
 const pharmacyName = pharmacy ? pharmacy.pharmacyName : null;
     
     const prescriptionId = req.params.Prid;
     try {
-      const medicines = req.body.medicines;
+      const medicines = req.body;
+      console.log(medicines)
       const prescription = await prescriptionModel.findById(prescriptionId);
   
       if (prescription) {
         // Loop through each medicine in the request body
         for (const medicine of medicines) {
-          const { name, price, availability } = medicine;
+          const { name, price, availablity } = medicine;
   
           // Find the medicine with the specified prescriptionId and name
           const existingMedicine = await medicineModel.findOne({ prescriptionId, name });
@@ -166,7 +189,7 @@ const pharmacyName = pharmacy ? pharmacy.pharmacyName : null;
           if (existingMedicine) {
             // Update the price and availability of the medicine
             existingMedicine.price = price;
-            existingMedicine.availablity = availability;
+            existingMedicine.availablity = availablity;
   
             // Save the updated medicine
             await existingMedicine.save();

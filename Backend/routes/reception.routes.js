@@ -143,7 +143,7 @@ router.get('/patient/:id',async (req, res) => {
  router.get('/doctors', async (req, res) => {
         try {
           const doctorId = await userModel.find({ role: 'doctor' }, { firstname: 1, lastname: 1, _id: 1 });
-          const doctors= await doctorModel.find({userId:doctorId},{ firstname: 1, lastname: 1,speciality:1 });
+          const doctors= await doctorModel.find({userId:doctorId},{ firstname: 1, lastname: 1,speciality:1,userId:1 });
           res.json(doctors);
         } catch (err) {
           res.status(500).json({ message: err.message });
@@ -161,9 +161,9 @@ router.get('/doctor/:id', async (req, res) => {
 //Create appoinyment
 router.post('/create/appointment', async (req, res) => {
   try {
-    const { PID, doctorId } = req.body;
+    const { PID, doctorId  } = req.body;
 
-   console.log(req.body);
+    console.log(doctorId)
     const doctor = await doctorModel.findOne({ userId: doctorId });
     if (!doctor) {
       return res.status(404).json({ message: 'Doctor not found' });
@@ -181,12 +181,31 @@ router.post('/create/appointment', async (req, res) => {
       doctorId
     });
 
-    res.send({message:'successfully appointed',appointment});
+    res.send({message:'successfully appointed',doctor});
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+//update the status us the prescription to completed after print
+router.put('/prescription/:prescriptionId', async (req, res) => {
+  try {
+    const { prescriptionId } = req.params;
+    const { status } = req.body;
+
+    // Update the prescription status
+    const updatedPrescription = await prescriptionModel.findByIdAndUpdate(
+      prescriptionId,
+      { status },
+      { new: true }
+    );
+
+    res.json({ message: 'Prescription status updated successfully', prescription: updatedPrescription });
+  } catch (error) {
+    console.error('Error updating prescription status:', error);
+    res.status(500).json({ error: 'An error occurred while updating the prescription status' });
+  }
+});
 // get Prescriptions
 // Get all Patients
 router.get('/prescriptions', async (req, res) => {
@@ -221,13 +240,13 @@ router.get('/prescriptions', async (req, res) => {
 
       // Create a new object with the prescription data and the medicine details
       const updatedPrescription = {
-        patientId: prescription.patientId,
+        PID: prescription.patientId,
         prescriptionId:prescription._id,
-        patientFullName: prescription.patientFullName,
-        doctorFullName: prescription.doctorFullName,
+        patientName: prescription.patientFullName,
+        doctorName: prescription.doctorFullName,
         age: prescription.age,
         medicines: medicineDetails,
-        pharmacyName:prescription.pharmacyName,
+        pharmacy:prescription.pharmacyName,
         status: prescription.status
       };
 
@@ -321,14 +340,36 @@ router.get('/prescriptions', async (req, res) => {
   }
   });
 
-  // Get single Priscription
+  
+// Get single Priscription
+router.get('/prescription/:Prid', async (req, res) => {
+  const prescriptionId = req.params.Prid;
+  
+  try {
+    const prescription = await prescriptionModel.findById(prescriptionId);
+  
+    // Find medicines with the prescriptionId from the medicines table
+    const medicines = await medicineModel.find({ prescriptionId: prescriptionId });
+  
+    const response = {
+      prescription: prescription,
+      medicines: medicines
+    };
+  
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+//send prescription to patient
   router.get('/order/:Prid',async (req, res) => {
     const prescriptionId=req.params.Prid;
     try {
-        // const prescription = await prescriptionModel.findById( prescriptionId );
+        const prescription = await prescriptionModel.findById( prescriptionId );
 
     await prescriptionModel.updateOne({ _id: prescriptionId}, { status: 'waiting' });
-    res.send("medicine request sent to pharmacy")
+    res.json({medicine:"medicine request sent to pharmacy",prescription})
     } catch (err) {
     res.status(500).json({ message: err.message });
     }

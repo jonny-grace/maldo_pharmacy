@@ -29,8 +29,7 @@ const verifyToken = (req, res, next) => {
 
 
 // Get all assigned apointments
-router.get('/appointments',authenticateDoctor, async (req, res) => {
-
+router.get('/appointments', async (req, res) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(token, secretKey);
@@ -38,76 +37,67 @@ router.get('/appointments',authenticateDoctor, async (req, res) => {
     // Get the doctor 
     const doctor = await userModel.findOne({ username });
 
-    if(!doctor) {
-      return res.status(404).json({message: 'Doctor not found'})
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
     }
 
     const doctorId = doctor._id;
 
     // Find all appointments for this doctor
-    const appointments = await apointmentModel.find({ doctorId, healed:false });
-    const doctorDetail= await doctorModel.findOne({userId:doctorId})
+    const appointments = await apointmentModel.find({ doctorId, healed: false });
+    const doctorDetail = await doctorModel.findOne({ userId: doctorId });
 
-    // Group appointments by doctorId
-    const appointmentsByDoctor = {};
+    // Prepare response array
+    const appointmentsDetails = [];
 
-    for(const appointment of appointments) {
-
+    for (const appointment of appointments) {
       const { patientId } = appointment;
 
       // Find patient 
-      const patient = await patientModel.findOne({ patientId });
+      const patient = await patientModel.findOne({ patientId: patientId });
 
-      if(!patient) {
-        return res.status(404).json({message: 'Patient not found'})  
+      if (!patient) {
+        return res.status(404).json({ message: 'Patient not found' });
       }
-
 
       // Extract required fields
       const patientDetails = {
-        firstName: patient.firstname,
-        lastName: patient.lastname,
-        age: patient.age  
+        firstname: patient.firstname,
+        lastname: patient.lastname,
+        age: patient.age,
+        address: patient.address,
+        patientId
       };
-
-      
 
       // Create appointment object
       const appointmentData = {
-        appointmentId: appointment._id,
-        patient: patientDetails
-      }
+        doctor: {
+          firstName: doctorDetail.firstname,
+          lastName: doctorDetail.lastname,
+          doctorId
+        },
+        patient: patientDetails,
+        apointmentId:appointment._id
+      };
 
-      // Add to group 
-      if(!appointmentsByDoctor[doctorId]) {
-        appointmentsByDoctor[doctorId] = {
-      doctor: {
-        firstName: doctorDetail.firstname, 
-        lastName: doctorDetail.lastname  
-      },
-      appointments: []
-    };
-      }
-
-      appointmentsByDoctor[doctorId].appointments.push(appointmentData);
-
+      // Add to response array
+      appointmentsDetails.push(appointmentData);
     }
 
-    res.json(appointmentsByDoctor);
+    res.json(appointmentsDetails);
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-
 });
     // Get single Patient
- router.get('/appointment/:id', authenticateDoctor, async (req, res) => {
+ router.get('/appointment/:id', async (req, res) => {
   const id=req.params.id
     try {
         const apointment = await apointmentModel.findOne({_id:id  });
         const patientId=apointment.patientId;
         const doctorId=apointment.doctorId;
-        const patient = await patientModel.findOne({ patientId }, { firstname: 1, lastname: 1, age: 1 });
+        const patient = await patientModel.findOne({ patientId }, { firstname: 1, lastname: 1, age: 1,patientId:1 });
         const doctor = await doctorModel.findOne({ userId:doctorId },{ firstname: 1, lastname: 1,speciality:1});
 
       if(!patient) {
@@ -144,6 +134,7 @@ router.get('/appointments',authenticateDoctor, async (req, res) => {
           patientFullName,
           doctorFullName,
           patientAge,
+
           status: 'assigned'
         });
     
